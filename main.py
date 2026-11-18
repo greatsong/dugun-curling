@@ -7,7 +7,7 @@ from vpython import *
 비질한_빠르기 = 0.5      # 비질하는 동안 1초에 줄어드는 빠르기 (m/s): 닦은 얼음은 더 매끄러워요
 손_배율 = 3              # 놓는 빠르기(m/s) = 마우스 빠르기(1초에 화면 높이의 몇 배) × 손_배율
 최대_빠르기 = 9          # 놓는 빠르기는 이보다 빠를 수 없어요 (m/s)
-팀마다_스톤 = 4          # 팀마다 던지는 스톤 수 (1~8): 화면의 슬라이더로도 바꿀 수 있어요
+팀마다_스톤 = 4          # 팀마다 던지는 스톤 수 (1~8): 화면 오른쪽 위 메뉴로도 바꿀 수 있어요
 시간간격 = 1 / 600       # 한 걸음에 걸리는 시간 (초): 1초를 600걸음으로 잘게 나눠요
 
 # ===== 2. 법칙: 미끄러지기는 기본 실습과 같아요. 다만 속도에는 방향이 있어요 =====
@@ -71,6 +71,7 @@ local_light(pos=vector(과녁.x, 2.5, 0), color=vector(0.8, 0.88, 1), intensity=
 box(pos=vector(가운데, -0.2, 0), size=vector(90, 0.3, 40), color=vector(0.5, 0.56, 0.66))     # 경기장 바닥
 box(pos=vector(뒤끝 + 4, 2.8, 0), size=vector(0.4, 6, 30), color=vector(0.2, 0.28, 0.5))      # 뒤쪽 벽
 box(pos=vector(뒤끝 + 3.75, 1.6, 0), size=vector(0.1, 0.4, 30), color=vector(0.95, 0.3, 0.35))
+box(pos=vector(뒤끝 + 50, 40, 0), size=vector(1, 120, 300), opacity=0)   # 보이지 않는 큰 벽: 손가락이 하늘이나 화면 밖을 가리켜도 위치를 알 수 있게
 for z0 in (-6, 0):                                   # 우리 경기장과, 분위기를 내는 옆 경기장
     box(pos=vector(가운데, -0.1, z0), size=vector(길이, 0.2, 2 * 옆벽), texture=textures.ice, color=얼음색, shininess=1)
     for z in (z0 - 옆벽 - 0.1, z0 + 옆벽 + 0.1):
@@ -86,11 +87,11 @@ for z in (-0.25, 0.25):                              # 발판
 for x, 색, 이름 in ((0, color.red, '손 떼는 선'), (넘을_선, vector(0.85, 0.4, 0.05), '넘어야 하는 선'), (과녁.x, vector(0.2, 0.3, 0.75), '과녁'), (뒷선, vector(0.3, 0.3, 0.35), '뒷선')):
     if 이름 != '과녁':
         box(pos=vector(x, 0.006, 0), size=vector(0.1, 0.012, 2 * 옆벽), color=색)
-    옆_글자들.append(label(pos=vector(x, -1.1, 옆벽 + 0.6), text=이름, color=색, height=13, background=color.white))
+    옆_글자들.append(label(pos=vector(x, -1.1, 옆벽 + 0.6), text=이름, color=색, height=15, background=color.white))
 for m in range(0, 25, 2):                            # 2 m마다 눈금, 4 m마다 숫자
     box(pos=vector(m, 0.01, 옆벽 - 0.15), size=vector(0.04, 0.02, 0.25), color=color.black)
     if m % 4 == 0:
-        옆_글자들.append(label(pos=vector(m, -0.5, 옆벽 + 0.6), text=f'{m} m', color=color.black, height=11))
+        옆_글자들.append(label(pos=vector(m, -0.5, 옆벽 + 0.6), text=f'{m} m', color=color.black, height=13))
 
 def 스톤_만들기(손잡이색):                           # 화강암 몸통 + 손잡이 (기본 실습과 같은 모양)
     몸통 = cylinder(pos=vector(0, 0.02, 0), axis=vector(0, 0.22, 0), radius=스톤_반지름, texture=textures.granite, color=vector(0.85, 0.85, 0.88))
@@ -105,13 +106,14 @@ def 스톤_만들기(손잡이색):                           # 화강암 몸통
 위치들, 속도들, 상태들 = [vector(0, 0, 0)] * 16, [vector(0, 0, 0)] * 16, ['대기'] * 16   # 스톤마다 한 칸 (상태: '대기' · '경기' · '빠짐')
 스톤_높이 = 스톤들[0].pos.y
 화살표 = arrow(pos=vector(0, 0.6, 0), axis=vector(0.01, 0, 0), shaftwidth=0.12, color=vector(1, 0.5, 0.1), visible=False)
-빠르기_글자 = label(pos=vector(0, 1.2, 0), text='', color=color.black, height=15, visible=False)
+빠르기_글자 = label(pos=vector(0, 1.2, 0), text='', color=color.black, height=17, background=color.white, visible=False)
 빗자루 = compound([box(pos=vector(0, 0.05, 0), size=vector(0.22, 0.1, 0.95), color=vector(0.1, 0.35, 0.95)),
                    cylinder(pos=vector(0, 0.1, 0), axis=vector(-0.7, 1.4, 0), radius=0.04, color=vector(0.95, 0.75, 0.2))], visible=False)
 빗자루_차이 = 빗자루.pos - vector(0, 0.05, 0)        # 솔 가운데에서 빗자루 중심까지
 자국들, 점들, 점수_글자들, 자취_시각, 자취_위치, 문지름 = [], [], [], [], [], []
 차례, 단계, 시점, 카메라_x, 알림, 빠진_글 = 0, '준비', '옆', 4, '', ''
 눈_방향 = (vector(1, 0, 0), vector(0, 0, -1))         # 화면 오른쪽 · 위쪽이 얼음에서 가리키는 방향
+잡은_손 = vector(0, 0, 0)
 놓은_위치, 놓은_빠르기, 걸음, 비질_시간, 자국_수, 지난_자국, 멈춘_시각 = vector(0, 0, 0), 0, 0, 0, 0, vector(0, 0, 0), 0
 
 def 지금_점수():
@@ -158,12 +160,14 @@ def 시점_바꾸기(b):
 def 준비():                                          # 다음 스톤을 손 떼는 선 위에 놓아요
     global 단계, 카메라_x
     위치들[차례], 단계, 카메라_x = 출발_위치, '준비', 4
+    빠르기_글자.pos, 빠르기_글자.visible = 출발_위치 + vector(0, 1.2, 0), 차례 < 2   # 팀마다 첫 스톤에는 안내를 띄워요
+    빠르기_글자.text = '스톤을 잡고 과녁 쪽으로\n끌다가 놓아요'
     시점_맞추기()
     판_쓰기()
 
 def 새_경기(b=None):
     global 팀마다_스톤, 차례, 알림, 빠진_글, 자국_수
-    팀마다_스톤 = round(스톤_수_슬라이더.value)
+    팀마다_스톤 = 스톤_수_메뉴.index + 1
     for i in range(16):                              # 아직 안 던진 스톤은 경기장 옆에 줄 세워요
         위치들[i] = vector(-2 - (i // 2) * 0.95, -0.05, (옆벽 + 0.8) * (1 if i % 2 == 0 else -1))
         속도들[i], 상태들[i] = vector(0, 0, 0), '대기'
@@ -180,7 +184,7 @@ def 스톤_수_바꾸기(s):
     if 차례 == 0 and 단계 == '준비':
         새_경기()
     else:
-        알림 = f'팀마다 스톤 {round(s.value)}개는 [새 경기]부터예요'
+        알림 = f'팀마다 스톤 {s.index + 1}개는 [새 경기]부터예요'
         판_쓰기()
 
 def 화면_방향():                                     # 카메라가 보는 방향, 화면의 오른쪽과 위쪽 방향
@@ -188,15 +192,15 @@ def 화면_방향():                                     # 카메라가 보는 �
     오른쪽 = hat(cross(앞, vector(0, 1, 0)))
     return 앞, 오른쪽, cross(오른쪽, 앞)
 
-def 손_화면():                                       # 마우스가 화면 어디에 있는지 (화면 높이를 1로 잰 값)
+def 화면_좌표(점):                                   # 3D 점이 화면 어디에 보이는지 (화면 높이를 1로 잰 값)
     앞, 오른쪽, 위 = 화면_방향()
-    d = scene.mouse.pos - scene.camera.pos
-    높이 = 2 * tan(scene.fov / 2) * dot(d, 앞)       # 마우스가 가리키는 곳의 깊이에서 화면 높이
+    d = 점 - scene.camera.pos
+    높이 = 2 * tan(scene.fov / 2) * dot(d, 앞)       # 그 점의 깊이에서 화면 높이
     return vector(dot(d, 오른쪽) / 높이, dot(d, 위) / 높이, 0)
 
 def 던질_속도():                                     # 마지막 0.1초 동안 손이 간 거리 ÷ 걸린 시간
-    if len(자취_시각) < 2 or clock() - 자취_시각[-1] > 0.05:
-        return vector(0, 0, 0)                       # 손이 멈춰 있어요
+    if len(자취_시각) < 2 or clock() - 자취_시각[-1] > 0.08:
+        return vector(0, 0, 0)                       # 손(손가락)이 멈춰 있어요
     처음 = len(자취_시각) - 2
     while 처음 > 0 and 자취_시각[-1] - 자취_시각[처음] < 0.1:
         처음 = 처음 - 1
@@ -206,13 +210,14 @@ def 던질_속도():                                     # 마지막 0.1초 동�
         속도 = 최대_빠르기 * hat(속도)
     return 속도
 
-def 누름(e):                                         # 스톤 가까이를 누르면 잡아요
-    global 단계, 눈_방향
-    if 단계 == '준비' and mag(vector(e.pos.x, 0, e.pos.z) - 위치들[차례]) < 1.2:
+def 누름(e):                                         # 스톤 가까이를 누르면 잡아요 (손가락도 잡기 쉽게 넉넉히)
+    global 단계, 눈_방향, 잡은_손
+    if 단계 == '준비' and mag(vector(e.pos.x, 0, e.pos.z) - 위치들[차례]) < 1.8:
         앞, 오른쪽, 위 = 화면_방향()
         단계, 눈_방향 = '잡는 중', (오른쪽, hat(vector(위.x, 0, 위.z)))   # 화면 오른쪽·위쪽 = 얼음의 이 방향
-        자취_시각.clear()
-        자취_위치.clear()
+        잡은_손 = scene.mouse.pos                     # 손가락은 누르기 전 위치가 남아 있으니, 바뀔 때까지 쓰지 않아요
+        자취_시각[:] = [clock()]
+        자취_위치[:] = [화면_좌표(e.pos)]               # 누른 곳에서 자취를 시작해요
 
 def 뗌(e):
     if 단계 == '잡는 중':
@@ -253,17 +258,19 @@ def 앞_스톤():                                       # 움직이는 스톤 �
             앞 = i
     return 앞
 
-def 문지르는_중(손, 앞):                             # 최근 0.3초 동안 스톤 앞에서 손이 오간 길이로 알아봐요
-    if 손 is None or 앞 < 0:
+def 문지르는_중(앞):                                 # 최근 0.3초 동안 스톤 앞에서 손이 화면 위를 오간 길이로 알아봐요
+    if 앞 < 0:
         return False
-    문지름.append(손 - 위치들[앞])                   # 스톤에서 본 손의 위치
+    스톤 = 화면_좌표(위치들[앞])
+    문지름.append(화면_좌표(scene.mouse.pos) - 스톤)     # 화면에서 스톤을 기준으로 본 손의 위치
     if len(문지름) > 18:
         문지름.pop(0)
     길 = 0
     for k in range(1, len(문지름)):
         길 = 길 + mag(문지름[k] - 문지름[k - 1])
     오간_길 = 길 - mag(문지름[-1] - 문지름[0])        # 한쪽으로 쭉 움직인 만큼은 빼요
-    return 오간_길 > 1.5 and mag(문지름[-1] - 1.2 * hat(속도들[앞])) < 2   # 스톤 앞 얼음 위에서 오갔나요?
+    앞쪽 = 화면_좌표(위치들[앞] + hat(속도들[앞])) - 스톤   # 화면에서 스톤 1 m 앞
+    return 오간_길 > 0.12 and mag(문지름[-1] - 앞쪽) < 0.22   # 스톤 앞에서 화면 높이의 0.12배 넘게 오갔나요?
 
 def 자국_놓기(위치):                                 # 비질로 닦인 자국 (쓴 자국은 다시 써요)
     global 자국_수
@@ -289,14 +296,14 @@ def 경기_끝():
     팀, 점 = 지금_점수()
     순서 = sorted([i for i in range(16) if 상태들[i] == '경기' and 팀들[i] == 팀], key=lambda i: mag(위치들[i] - 과녁))
     for i in 순서[:점]:                              # 점수가 된 스톤 위에 표시해요
-        점수_글자들.append(label(pos=위치들[i] + vector(0, 1, 0), text='1점', color=color.black, height=14, background=color.white))
+        점수_글자들.append(label(pos=위치들[i] + vector(0, 1, 0), text='1점', color=color.black, height=16, background=color.white))
     판_쓰기()
     play_sound(784, 0.3, 'sine', 0.3)
 
 button(text='새 경기', bind=새_경기)
 button(text='선수 시점으로 보기', bind=시점_바꾸기)
-스톤_수_슬라이더 = slider(min=1, max=8, step=1, value=팀마다_스톤, length=130, text='팀마다 스톤', bind=스톤_수_바꾸기)
-scene.caption = '던지기: 스톤을 누른 채 과녁 쪽으로 끌다가 놓아요\n비질: 달리는 스톤 앞 얼음 위에서 마우스를 좌우로 빠르게 문질러요 (Space 키도 돼요)'
+스톤_수_메뉴 = menu(choices=[f'팀마다 스톤 {k}개' for k in range(1, 9)], selected=f'팀마다 스톤 {팀마다_스톤}개', bind=스톤_수_바꾸기)
+scene.caption = '끌다가 놓으면 던지기 · 달리는 스톤 앞을 문지르면 비질 (Space 키도 돼요)'
 scene.bind('mousedown', 누름)
 scene.bind('mouseup', 뗌)
 새_경기()
@@ -306,8 +313,8 @@ while True:
     rate(240 if 단계 == '잡는 중' else 60)           # 스톤을 잡고 있는 동안은 손을 더 자주 살펴요
     목표_x = 4
     if 단계 == '잡는 중':
-        손 = 손_화면()
-        if len(자취_위치) == 0 or 손 != 자취_위치[-1]:
+        손 = 화면_좌표(scene.mouse.pos)
+        if scene.mouse.pos != 잡은_손 and 손 != 자취_위치[-1]:
             자취_시각.append(clock())
             자취_위치.append(손)
         if len(자취_위치) > 40:
@@ -320,8 +327,8 @@ while True:
             빠르기_글자.pos, 빠르기_글자.text, 빠르기_글자.visible = 출발_위치 + vector(0, 1.2, 0), 새_글, True
     elif 단계 == '달리는 중':
         앞 = 앞_스톤()
-        손 = scene.mouse.project(normal=vector(0, 1, 0))   # 마우스가 가리키는 얼음 위의 점
-        문지름_중 = 문지르는_중(손, 앞)
+        손 = scene.mouse.project(normal=vector(0, 1, 0))   # 마우스가 가리키는 얼음 위의 점 (빗자루를 그릴 곳)
+        문지름_중 = 문지르는_중(앞)
         비질_중 = 문지름_중 or ' ' in keysdown()     # 마우스로 문지르거나 Space 키를 누르고 있으면 비질
         for k in range(초당_걸음 // 60):             # 화면을 다시 그리는 사이(1/60초)의 걸음
             for i in range(16):
@@ -344,14 +351,14 @@ while True:
             if 비질_중:
                 비질_시간 = 비질_시간 + 1 / 60
                 솔_위치 = 위치들[앞] + (스톤_반지름 + 0.35) * hat(속도들[앞])   # 스톤 바로 앞
-                빗자루.pos = (손 if 문지름_중 else 솔_위치 + vector(0, 0, 0.3 * sin(clock() * 30))) + 빗자루_차이
+                빗자루.pos = (손 if 문지름_중 and 손 is not None else 솔_위치 + vector(0, 0, 0.3 * sin(clock() * 30))) + 빗자루_차이
                 if mag(솔_위치 - 지난_자국) > 0.3:
                     자국_놓기(솔_위치)
                     지난_자국 = 솔_위치
             빗자루.visible = 비질_중
             목표_x = max(4, min(위치들[앞].x + 2, 과녁.x))
             빠르기_글자.pos = 위치들[앞] + vector(0, 1.2, 0)
-            빠르기_글자.text = f'{mag(속도들[앞]):.1f} m/s' + ('  비질 중!' if 비질_중 else '')
+            빠르기_글자.text = f'{mag(속도들[앞]):.1f} m/s' + ('  비질 중!' if 비질_중 else '\n앞을 문지르면 비질' if 차례 < 2 else '')
         else:
             멈춤()
     elif 단계 == '보는 중' and clock() - 멈춘_시각 > 2:
